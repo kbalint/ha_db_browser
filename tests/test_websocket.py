@@ -66,6 +66,19 @@ class WebsocketTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(c.error[0], "unauthorized")
         self.execute.assert_not_called()
 
+    async def test_websocket_errors_follow_requested_language(self):
+        for language, expected in (("de-DE", "Administratoren"), ("hu-HU", "admin"), ("fr", "administrators")):
+            c = Connection(False)
+            await ws.websocket_query(self.hass, c, {"id": 1, "action": "live", "params": {"language": language}})
+            self.assertIn(expected, c.error[1])
+
+    async def test_background_errors_follow_requested_language(self):
+        self.manager.state.update({"errorCode": "db_busy", "error": "Original"})
+        c = Connection(True)
+        await ws.websocket_query(self.hass, c, {"id": 1, "action": "status", "params": {"language": "de"}})
+        self.assertIn("belegt", c.result["error"])
+        self.assertEqual(self.manager.state["error"], "Original")
+
     async def test_unknown_or_deep_table_is_not_executed(self):
         c = Connection(True)
         await ws.websocket_query(self.hass, c, {"id": 1, "action": "table", "params": {"name": "states", "offset": 999999}})

@@ -17,14 +17,15 @@ def files(folder):
 
 runtime = files(component)
 assert (component / "frontend" / "panel.js") in runtime
-archive = out / f"ha-adatterkep-{version}.zip"
+documentation = [ROOT / name for name in ("README.md", "README.hu.md", "README.de.md", "LICENSE")]
+archive = out / f"ha-db-browser-{version}.zip"
 with ZipFile(archive, "w", ZIP_DEFLATED) as zipfile:
-    for path in runtime + [ROOT / "README.md"]:
+    for path in runtime + documentation:
         zipfile.write(path, path.relative_to(ROOT).as_posix())
-source = out / f"ha-adatterkep-{version}-source.zip"
+source = out / f"ha-db-browser-{version}-source.zip"
 with ZipFile(source, "w", ZIP_DEFLATED) as zipfile:
     selected = runtime + files(ROOT / "src") + files(ROOT / "scripts") + files(ROOT / "tests")
-    selected += [ROOT / f for f in ["README.md", "hacs.json", "package.json", "package-lock.json", "build.cjs", "server.cjs", "analyze.cjs", ".gitignore"]]
+    selected += documentation + [ROOT / f for f in ["hacs.json", "package.json", "package-lock.json", "build.cjs", "server.cjs", "analyze.cjs", ".gitignore"]]
     for path in selected:
         zipfile.write(path, path.relative_to(ROOT).as_posix())
 for path in [archive, source]:

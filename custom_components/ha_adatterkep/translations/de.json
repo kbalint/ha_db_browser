@@ -1,0 +1,17 @@
+{
+  "title": "HA DB browser",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Recorder-Datenbank durchsuchen",
+        "description": "Liest die aktuelle Recorder-SQLite-Datenbank ohne Änderungen. HA DB browser erscheint in der Admin-Seitenleiste. Eine vollständige Analyse startet nur manuell."
+      }
+    },
+    "error": {
+      "cannot_connect": "Die Datenbank kann nicht gelesen werden. Erforderlich ist eine lokale Recorder-SQLite-Datenbank im WAL-Modus mit unterstütztem Schema. Einzelheiten im Home-Assistant-Protokoll."
+    },
+    "abort": {
+      "already_configured": "HA DB browser ist bereits eingerichtet."
+    }
+  }
+}

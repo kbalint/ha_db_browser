@@ -1,21 +1,130 @@
-import React,{useEffect,useState} from 'react';
-import{createRoot}from'react-dom/client';
-import{setTransport,api,Tables,Entities,Entity,Relations,Metric,Bars,bytes,n,date}from'./app.jsx';
+import { t, getTimeZone, formatDateTime, configureLanguage, getLanguage, useLanguage } from "./i18n.js";
+import React, { useEffect, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import { setTransport, api, Tables, Entities, Entity, Relations, Metric, Bars, bytes, n, date } from './app.jsx';
 import css from './app.css';
-
-function LivePanel(){
- const [snapshot,setSnapshot]=useState(null),[status,setStatus]=useState({}),[live,setLive]=useState(null),[tab,setTab]=useState('overview'),[error,setError]=useState(''),[selected,setSelected]=useState(null),[refreshing,setRefreshing]=useState(false);
- useEffect(()=>{let alive=true,busy=false,generation='';async function load(){if(busy)return;busy=true;try{const result=await api('/api/overview?generation='+encodeURIComponent(generation));if(alive){if(!result.unchanged){setSnapshot(result.analysis);generation=result.analysis?.generated||''}setStatus(result.status)}const current=await api('/api/live');if(alive){setLive(current);setError('')}}catch(e){if(alive)setError(e.message)}finally{busy=false}}load();const interval=setInterval(()=>{if(!document.hidden)load()},15000);return()=>{alive=false;clearInterval(interval)}},[]);
- async function refresh(){setRefreshing(true);try{setStatus(await api('/api/refresh'));setError('')}catch(e){setError(e.message)}finally{setRefreshing(false)}}
- async function cancel(){try{setStatus(await api('/api/cancel'))}catch(e){setError(e.message)}}
- const states=snapshot?.tables.find(t=>t.name==='states'),stateStorage=states?(states.storage?.bytes||0)+states.indexes.reduce((s,i)=>s+(i.bytes||0),0):0;
- return <div className="adatterkep-app"><header><div><div className="logo">HA</div><span><b>Adattérkép</b><small>Élő recorder · admin nézet</small></span></div><span className="badge">WAL · csak olvasás</span></header><main><div className="title"><div><p className="eyebrow">HOME ASSISTANT RECORDER</p><h1>Mi foglalja a helyet?</h1><p className="muted">A commitolt adatok frissülnek; teljes elemzés csak kérésre fut.</p></div><div><button disabled={status.running||refreshing} onClick={refresh}>{status.running?'Elemzés folyamatban…':snapshot?'Teljes elemzés frissítése':'Teljes elemzés indítása'}</button>{status.running&&<button onClick={cancel}>Megszakítás</button>}</div></div>{error&&<p role="alert" className="context">{error}</p>}{status.error&&<p role="alert" className="context">{status.error}</p>}{status.running&&<p aria-live="polite">Fázis: {status.phase} · ebben a táblában {n(status.rowsRead)} sor feldolgozva. Rövid olvasási szakaszok között az adatbázis-kapcsolat bezárul.</p>}<div className="metrics"><Metric label="DB-fájl most" value={live?bytes(live.fileBytes):'—'}/><Metric label="WAL-fájl most" value={live?bytes(live.walBytes):'—'} sub="A fő DB-n felüli napló, nem hozzáadott egyedi adattartalom"/><Metric label="Legutóbbi commitolt állapotsor" value={live?.latest?'#'+live.latest.state_id:'—'} sub={date(live?.latest?.last_updated_ts)}/><Metric label="Teljesen szabad lapok most" value={live?bytes(live.freePages*live.pageSize):'—'}/></div><nav className="tabs" aria-label="Nézetek">{[['overview','Áttekintés'],['tables','Táblák és méretek'],['entities','Entityk'],['relations','Kapcsolatok']].map(([id,label])=><button key={id} className={tab===id?'active':''} onClick={()=>{setTab(id);setSelected(null)}}>{label}</button>)}</nav>{!snapshot?<section className="panel"><h2>Indítsd el az első teljes elemzést</h2><p>A fenti élő mutatók már az éles DB-ből jönnek. A pontos táblaméretekhez és entitynkénti sorszámokhoz az elemzés a történetet 5000 soros darabokban olvassa. Többmillió sornál ez percekig tarthat, és I/O-terheléssel jár.</p><p>Nem változtatja meg a recorder beállításait, és nem töröl adatot. Nincs automatikus teljes újraszkennelés.</p></section>:<><p className="muted">Utolsó teljes elemzés: {new Date(snapshot.generated).toLocaleString('hu-HU')} · nem atomi, darabolt mérés; a közben érkező sorok a következő teljes elemzésben jelennek meg. Purge közben a számlálás eltérhet.</p>{!snapshot.storageAvailable&&<p role="alert" className="context">Egyes fizikai méretek nem mérhetők: dbstat hiányzik, vagy a mérés időkerete lejárt. A hiányzó méret nem nulla; a lent látható méretösszesítések részlegesek.</p>}{tab==='overview'&&<><section className="panel"><h2>A méret forrásai</h2><p>{n(states?.rows)} állapotsor a legutóbbi elemzésben · {bytes(stateStorage)} states + indexei. {n(snapshot.entities.length)} entity és {n(snapshot.stats.length)} statisztikai idősor.</p><Bars items={snapshot.tables.map(t=>({label:t.name,value:(t.storage?.bytes||0)+t.indexes.reduce((s,i)=>s+(i.bytes||0),0)})).sort((a,b)=>b.value-a.value)} format={bytes}/></section><section className="panel"><h2>Legnagyobb állapotforgalom</h2><Bars items={snapshot.entities.slice(0,20).map(e=>({label:e.entity_id,value:e.rows}))} onSelect={e=>{setSelected(e.label);setTab('entities')}}/></section><section className="panel"><h2>Napi forgalom · UTC</h2><Bars items={snapshot.days.map(d=>({label:d.day,value:d.rows}))}/></section></>}{tab==='tables'&&<Tables data={snapshot}/>} {tab==='entities'&&(selected?<><button onClick={()=>setSelected(null)}>← Entitylista</button><Entity id={selected} data={snapshot} live onChoose={setSelected}/></>:<Entities data={snapshot} live/>)}{tab==='relations'&&<Relations data={snapshot}/>}</>}<footer>15 másodperces frissítés látható lapon · csak commitolt adatok · a recorder commit_interval miatt késhet · nincs SQL-írás vagy automatikus purge</footer></main></div>
+function LivePanel() {
+  const language = useLanguage();
+  const [snapshot, setSnapshot] = useState(null),
+    [status, setStatus] = useState({}),
+    [live, setLive] = useState(null),
+    [tab, setTab] = useState('overview'),
+    [error, setError] = useState(''),
+    [selected, setSelected] = useState(null),
+    [refreshing, setRefreshing] = useState(false);
+  useEffect(() => {
+    let alive = true,
+      busy = false,
+      generation = '';
+    async function load() {
+      if (busy) return;
+      busy = true;
+      try {
+        const result = await api('/api/overview?generation=' + encodeURIComponent(generation));
+        if (alive) {
+          if (!result.unchanged) {
+            setSnapshot(result.analysis);
+            generation = result.analysis?.generated || '';
+          }
+          setStatus(result.status);
+        }
+        const current = await api('/api/live');
+        if (alive) {
+          setLive(current);
+          setError('');
+        }
+      } catch (e) {
+        if (alive) setError(e.message);
+      } finally {
+        busy = false;
+      }
+    }
+    load();
+    const interval = setInterval(() => {
+      if (!document.hidden) load();
+    }, 15000);
+    return () => {
+      alive = false;
+      clearInterval(interval);
+    };
+  }, [language]);
+  async function refresh() {
+    setRefreshing(true);
+    try {
+      setStatus(await api('/api/refresh'));
+      setError('');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+  async function cancel() {
+    try {
+      setStatus(await api('/api/cancel'));
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+  const states = snapshot?.tables.find(t => t.name === 'states'),
+    stateStorage = states ? (states.storage?.bytes || 0) + states.indexes.reduce((s, i) => s + (i.bytes || 0), 0) : 0;
+  return <div className="adatterkep-app"><header><div><div className="logo">HA</div><span><b>{t("text_191")}</b><small>{t("text_204")}</small></span></div><span className="badge">{t("text_205")}</span></header><main><div className="title"><div><p className="eyebrow">HOME ASSISTANT RECORDER</p><h1>{t("text_194")}</h1><p className="muted">{t("text_206")}</p></div><div><button disabled={status.running || refreshing} onClick={refresh}>{status.running ? t("text_207") : snapshot ? t("text_208") : t("text_209")}</button>{status.running && <button onClick={cancel}>{t("text_210")}</button>}</div></div>{error && <p role="alert" className="context">{error}</p>}{status.error && <p role="alert" className="context">{status.error}</p>}{status.running && <p aria-live="polite">{t("text_211")} {['idle','queued','starting','complete','cancelled','error'].includes(status.phase)?t('phase_'+status.phase):status.phase} {t("text_212")} {n(status.rowsRead)} {t("text_213")}</p>}<div className="metrics"><Metric label={t("text_214")} value={live ? bytes(live.fileBytes) : '—'} /><Metric label={t("text_215")} value={live ? bytes(live.walBytes) : '—'} sub={t("text_216")} /><Metric label={t("text_217")} value={live?.latest ? '#' + live.latest.state_id : '—'} sub={date(live?.latest?.last_updated_ts)} /><Metric label={t("free_pages_now")} value={live ? bytes(live.freePages * live.pageSize) : '—'} /></div><nav className="tabs" aria-label={t("text_199")}>{[['overview', t("text_200")], ['tables', t("text_201")], ['entities', t("entities")], ['relations', t("text_057")]].map(([id, label]) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => {
+          setTab(id);
+          setSelected(null);
+        }}>{label}</button>)}</nav>{!snapshot ? <section className="panel"><h2>{t("text_218")}</h2><p>{t("text_219")}</p><p>{t("text_220")}</p></section> : <><p className="muted">{t("text_221")} {formatDateTime(snapshot.generated)} {t("text_222")}</p>{!snapshot.storageAvailable && <p role="alert" className="context">{t("text_223")}</p>}{tab === 'overview' && <><section className="panel"><h2>{t("text_224")}</h2><p>{n(states?.rows)} {t("text_225")} {bytes(stateStorage)} {t("text_226")} {n(snapshot.entities.length)} {t("text_227")} {n(snapshot.stats.length)} {t("text_228")}</p><Bars items={snapshot.tables.map(t => ({
+              label: t.name,
+              value: (t.storage?.bytes || 0) + t.indexes.reduce((s, i) => s + (i.bytes || 0), 0)
+            })).sort((a, b) => b.value - a.value)} format={bytes} /></section><section className="panel"><h2>{t("text_162")}</h2><Bars items={snapshot.entities.slice(0, 20).map(e => ({
+              label: e.entity_id,
+              value: e.rows
+            }))} onSelect={e => {
+              setSelected(e.label);
+              setTab('entities');
+            }} /></section><section className="panel"><h2>{t("text_229")}</h2><Bars items={snapshot.days.map(d => ({
+              label: d.day,
+              value: d.rows
+            }))} /></section></>}{tab === 'tables' && <Tables data={snapshot} />} {tab === 'entities' && (selected ? <><button onClick={() => setSelected(null)}>{t("text_230")}</button><Entity id={selected} data={snapshot} live onChoose={setSelected} /></> : <Entities data={snapshot} live />)}{tab === 'relations' && <Relations data={snapshot} />}</>}<footer>{t("text_231")}</footer></main></div>;
 }
-
-class AdatterkepPanel extends HTMLElement{
- connectedCallback(){if(!this.shadowRoot){const shadow=this.attachShadow({mode:'open'}),style=document.createElement('style');style.textContent=css.replace(':root{',':host{display:block;').replace('body{','.adatterkep-app{');shadow.append(style);this.container=document.createElement('div');shadow.append(this.container)}this.mount()}
- set hass(value){this._hass=value;if(this.isConnected)this.mount()}
- mount(){if(!this._hass||this.root)return;setTransport(url=>{const parsed=new URL(url,'https://local.invalid'),action=parsed.pathname.split('/').at(-1),params=Object.fromEntries(parsed.searchParams);if(params.offset!==undefined)params.offset=Number(params.offset);return this._hass.callWS({type:'ha_adatterkep/query',action,params})});this.root=createRoot(this.container);this.root.render(<LivePanel/>)}
- disconnectedCallback(){this.root?.unmount();this.root=null}
+class AdatterkepPanel extends HTMLElement {
+  connectedCallback() {
+    if (!this.shadowRoot) {
+      const shadow = this.attachShadow({
+          mode: 'open'
+        }),
+        style = document.createElement('style');
+      style.textContent = css.replace(':root{', ':host{display:block;').replace('body{', '.adatterkep-app{');
+      shadow.append(style);
+      this.container = document.createElement('div');
+      shadow.append(this.container);
+    }
+    this.mount();
+  }
+  set hass(value) {
+    this._hass = value;
+    configureLanguage(value);
+    this.lang = getLanguage();
+    if (this.isConnected) this.mount();
+  }
+  mount() {
+    if (!this._hass || this.root) return;
+    setTransport(url => {
+      const parsed = new URL(url, 'https://local.invalid'),
+        action = parsed.pathname.split('/').at(-1),
+        params = Object.fromEntries(parsed.searchParams);
+      if (params.offset !== undefined) params.offset = Number(params.offset);
+      params.language = getLanguage();
+      return this._hass.callWS({
+        type: 'ha_adatterkep/query',
+        action,
+        params
+      });
+    });
+    this.root = createRoot(this.container);
+    this.root.render(<LivePanel />);
+  }
+  disconnectedCallback() {
+    this.root?.unmount();
+    this.root = null;
+  }
 }
-if(!customElements.get('ha-adatterkep-panel'))customElements.define('ha-adatterkep-panel',AdatterkepPanel);
+if (!customElements.get('ha-adatterkep-panel')) customElements.define('ha-adatterkep-panel', AdatterkepPanel);

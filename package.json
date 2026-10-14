@@ -1,1 +1,21 @@
-{"name":"ha-db-explorer","private":true,"scripts":{"analyze":"node analyze.cjs","build":"node build.cjs","start":"node server.cjs"},"dependencies":{"react":"19.2.0","react-dom":"19.2.0","esbuild":"0.25.12"}}
+{
+  "name": "ha-db-browser",
+  "private": true,
+  "scripts": {
+    "analyze": "node analyze.cjs",
+    "build": "node build.cjs",
+    "start": "node server.cjs",
+    "test:i18n": "node scripts/check-translations.cjs",
+    "test:browser": "node tests/verify_languages.cjs"
+  },
+  "dependencies": {
+    "esbuild": "0.25.12",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  },
+  "devDependencies": {
+    "@babel/parser": "^8.0.7",
+    "@babel/traverse": "^8.0.7",
+    "playwright": "^1.64.0"
+  }
+}

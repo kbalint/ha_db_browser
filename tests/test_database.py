@@ -166,7 +166,7 @@ class DatabaseTests(unittest.IsolatedAsyncioTestCase):
         c.commit()
         start = time.monotonic()
         try:
-            with self.assertRaisesRegex(ReaderError, "foglalt"):
+            with self.assertRaisesRegex(ReaderError, "busy"):
                 SQLiteReader(locked).live()
             self.assertLess(time.monotonic()-start, .8)
         finally:

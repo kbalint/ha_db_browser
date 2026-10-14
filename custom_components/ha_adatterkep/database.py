@@ -12,6 +12,7 @@ from pathlib import Path
 import sqlite3
 import time
 from typing import Any
+from .i18n import translate
 
 CHUNK_SIZE = 5000
 QUERY_SECONDS = 3.0
@@ -25,6 +26,9 @@ ALLOWED_TABLES = frozenset({
 
 class ReaderError(Exception):
     """A safe, user-presentable read failure."""
+    def __init__(self, code):
+        self.code = code
+        super().__init__(translate(code))
 
 
 def stamp() -> str:
@@ -68,10 +72,10 @@ class SQLiteReader:
         except sqlite3.OperationalError as err:
             text = str(err).lower()
             if "locked" in text or "busy" in text:
-                raise ReaderError("Az adatbázis most foglalt (mentés, purge vagy migráció). Próbáld később.") from err
+                raise ReaderError("db_busy") from err
             if "interrupted" in text:
-                raise ReaderError("A lekérdezés elérte az időkeretet; az éles recorder védelmében megszakadt.") from err
-            raise ReaderError("Az SQLite olvasás sikertelen; ellenőrizd az adatbázist és a HA naplóját.") from err
+                raise ReaderError("query_timeout") from err
+            raise ReaderError("sqlite_failed") from err
         finally:
             if db is not None:
                 db.close()
@@ -84,13 +88,13 @@ class SQLiteReader:
         with self.connect() as db:
             tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             if not {"states", "states_meta", "state_attributes", "statistics_meta"} <= tables:
-                raise ReaderError("Nem támogatott recorder séma: hiányoznak az új metaadat-táblák.")
+                raise ReaderError("schema_missing")
             columns = {r[1] for r in db.execute("PRAGMA table_info(states)")}
             if not {"metadata_id", "last_updated_ts", "context_id_bin"} <= columns:
-                raise ReaderError("Nem támogatott recorder states séma.")
+                raise ReaderError("schema_states")
             mode = db.execute("PRAGMA journal_mode").fetchone()[0]
             if mode != "wal":
-                raise ReaderError("Az élő elemzés WAL módú SQLite adatbázist igényel. Az integráció nem módosítja a journal módot.")
+                raise ReaderError("wal_required")
             return {"journalMode": mode}
 
     def live(self):
@@ -145,7 +149,7 @@ class SQLiteReader:
 
     def small_count(self, name):
         if name not in ALLOWED_TABLES:
-            raise ReaderError("Ismeretlen tábla")
+            raise ReaderError("unknown_table")
         with self.connect() as db:
             return db.execute(f'SELECT count(*) FROM "{name}"').fetchone()[0]
 
@@ -156,7 +160,7 @@ class SQLiteReader:
                    "statistics": ("id", "start_ts", "metadata_id"),
                    "statistics_short_term": ("id", "start_ts", "metadata_id")}
         if table not in choices:
-            raise ReaderError("Nem támogatott elemzési tábla")
+            raise ReaderError("unsupported_table")
         pk, ts, key = choices[table]
         extra = ",sum(length(cast(state AS blob))) stateBytes" if table == "states" else ""
         day = f",strftime('%Y-%m-%d',{ts},'unixepoch') day" if table == "states" else ""
@@ -176,7 +180,7 @@ class SQLiteReader:
             metas = self.rows(db, "SELECT * FROM states_meta WHERE entity_id=?", (entity_id,))
             stats = self.rows(db, "SELECT * FROM statistics_meta WHERE statistic_id=?", (entity_id,))
             if not metas and not stats:
-                raise ReaderError("Ismeretlen entity vagy statisztika")
+                raise ReaderError("unknown_entity")
             meta, statistic = (metas[0] if metas else None), (stats[0] if stats else None)
             if snapshot:
                 meta = next((m for m in snapshot["entities"] if m["entity_id"] == entity_id), meta)
@@ -207,11 +211,11 @@ class SQLiteReader:
 
     def context(self, value):
         if len(value) != 32:
-            raise ReaderError("Hibás kontextusazonosító")
+            raise ReaderError("invalid_context")
         try:
             binary = bytes.fromhex(value)
         except ValueError as err:
-            raise ReaderError("Hibás kontextusazonosító") from err
+            raise ReaderError("invalid_context") from err
         with self.connect() as db:
             states = self.rows(db, '''SELECT m.entity_id,s.state,s.state_id,s.last_updated_ts
                 FROM states s LEFT JOIN states_meta m USING(metadata_id)
@@ -226,7 +230,7 @@ class SQLiteReader:
 
     def table(self, name, offset=0, snapshot=None):
         if name not in ALLOWED_TABLES:
-            raise ReaderError("Ismeretlen tábla")
+            raise ReaderError("unknown_table")
         # Bounded UI pagination; deep OFFSET scans are forbidden on the live DB.
         offset = max(0, min(int(offset), 10000))
         with self.connect() as db:

@@ -7,6 +7,7 @@ import logging
 import time
 
 from .database import ReaderError, stamp
+from .i18n import translate
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ async def scan(reader, execute, progress, pause=0.025):
             await asyncio.sleep(pause)
     result["entities"].sort(key=lambda x: x["rows"], reverse=True)
     result["events"] = sorted(event_types.values(), key=lambda x: x["rows"], reverse=True)
-    result["days"] = [{"day": k or "ismeretlen", "rows": v} for k, v in sorted(days.items(), key=lambda x: x[0] or "")]
+    result["days"] = [{"day": k or "—", "rows": v} for k, v in sorted(days.items(), key=lambda x: x[0] or "")]
     result.update(await execute(reader.live))
     result["generated"] = stamp()
     return result
@@ -116,8 +117,9 @@ class AnalysisManager:
             raise
         except Exception as err:
             if not isinstance(err, ReaderError):
-                _LOGGER.exception("Adattérkép background analysis failed")
-            self.state.update({"phase": "error", "error": str(err) if isinstance(err, ReaderError) else "Az elemzés sikertelen. Részletek a Home Assistant naplójában."})
+                _LOGGER.exception("HA DB browser background analysis failed")
+            code = err.code if isinstance(err, ReaderError) else "analysis_failed"
+            self.state.update({"phase": "error", "errorCode": code, "error": translate(code)})
         finally:
             self.state["running"] = False
 

@@ -10,13 +10,13 @@ from .database import ReaderError, SQLiteReader
 def reader_for_hass(hass):
     recorder = get_instance(hass)
     if recorder.migration_in_progress:
-        raise ReaderError("A recorder adatbázis migrációja még folyamatban van.")
+        raise ReaderError("migrating")
     url = make_url(recorder.db_url)
     if url.get_backend_name() != "sqlite" or not url.database or url.database == ":memory:":
-        raise ReaderError("Ez az integráció csak helyi, fájl alapú recorder SQLite adatbázist támogat.")
+        raise ReaderError("sqlite_only")
     if url.query:
-        raise ReaderError("Egyedi SQLite URI-paraméterezés nem támogatott.")
+        raise ReaderError("uri_unsupported")
     path = Path(url.database)
     if not path.is_absolute():
-        raise ReaderError("A recorder SQLite útvonalának abszolútnak kell lennie.")
+        raise ReaderError("absolute_path")
     return SQLiteReader(path)

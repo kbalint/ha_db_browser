@@ -8,7 +8,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
-from .const import DOMAIN, PANEL_PATH, VERSION
+from .const import DOMAIN, NAME, PANEL_PATH, VERSION
 from .database import ReaderError
 from .runtime import reader_for_hass
 from .scanner import AnalysisManager
@@ -16,6 +16,8 @@ from .websocket import async_register_commands
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    if entry.title == "HA Adattérkép":
+        hass.config_entries.async_update_entry(entry, title=NAME)
     try:
         reader = reader_for_hass(hass)
         await hass.async_add_executor_job(reader.validate)
@@ -25,7 +27,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     state = hass.data.setdefault(DOMAIN, {})
     def guard():
         if get_instance(hass).migration_in_progress:
-            raise ReaderError("A recorder migrál; az olvasás átmenetileg szünetel.")
+            raise ReaderError("migrating")
 
     manager = AnalysisManager(reader, hass.async_add_executor_job, guard)
     state["manager"] = manager
@@ -39,7 +41,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass,
         frontend_url_path=PANEL_PATH,
         webcomponent_name="ha-adatterkep-panel",
-        sidebar_title="HA Adattérkép",
+        sidebar_title="HA DB browser",
         sidebar_icon="mdi:database-search",
         module_url=f"/ha_adatterkep_static/panel.js?v={VERSION}",
         require_admin=True,

@@ -1,4 +1,6 @@
 """Single-instance, UI-configured recorder explorer."""
+import logging
+
 try:
     import probatio as vol
 except ImportError:
@@ -6,9 +8,11 @@ except ImportError:
 
 from homeassistant import config_entries
 
-from .const import DOMAIN
+from .const import DOMAIN, NAME
 from .database import ReaderError
 from .runtime import reader_for_hass
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class AdatterkepConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -23,9 +27,8 @@ class AdatterkepConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 reader = reader_for_hass(self.hass)
                 await self.hass.async_add_executor_job(reader.validate)
             except ReaderError as err:
+                _LOGGER.warning("HA DB browser setup failed: %s", err)
                 return self.async_show_form(step_id="user", data_schema=vol.Schema({}),
-                                            errors={"base": "cannot_connect"},
-                                            description_placeholders={"error": str(err)})
-            return self.async_create_entry(title="HA Adattérkép", data={})
-        return self.async_show_form(step_id="user", data_schema=vol.Schema({}), errors=errors,
-                                    description_placeholders={"error": ""})
+                                            errors={"base": "cannot_connect"})
+            return self.async_create_entry(title=NAME, data={})
+        return self.async_show_form(step_id="user", data_schema=vol.Schema({}), errors=errors)

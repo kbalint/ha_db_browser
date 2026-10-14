@@ -1,0 +1,17 @@
+{
+  "title": "HA DB browser",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Browse the recorder database",
+        "description": "Reads the current recorder SQLite database without changing it. HA DB browser appears in the admin sidebar. Full analysis runs only when started manually."
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot read the database. A local recorder SQLite database in WAL mode with a supported schema is required. See the Home Assistant logs for details."
+    },
+    "abort": {
+      "already_configured": "HA DB browser is already configured."
+    }
+  }
+}

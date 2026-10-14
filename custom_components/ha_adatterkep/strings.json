@@ -1,8 +1,17 @@
 {
-  "title": "HA Adattérkép",
+  "title": "HA DB browser",
   "config": {
-    "step": {"user": {"title": "Recorder adatbázis feltérképezése", "description": "A jelenlegi recorder SQLite adatbázisát olvassa, módosítás nélkül. Az admin oldalsávban megjelenik az Adattérkép. Teljes elemzés csak kézi indításra fut. {error}"}},
-    "error": {"cannot_connect": "Az adatbázis nem olvasható. {error}"},
-    "abort": {"already_configured": "Az Adattérkép már be van állítva."}
+    "step": {
+      "user": {
+        "title": "Browse the recorder database",
+        "description": "Reads the current recorder SQLite database without changing it. HA DB browser appears in the admin sidebar. Full analysis runs only when started manually."
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot read the database. A local recorder SQLite database in WAL mode with a supported schema is required. See the Home Assistant logs for details."
+    },
+    "abort": {
+      "already_configured": "HA DB browser is already configured."
+    }
   }
 }

@@ -1,7 +1,7 @@
 {
   "domain": "ha_adatterkep",
-  "name": "HA Adattérkép",
-  "version": "0.1.0",
+  "name": "HA DB browser",
+  "version": "0.1.1",
   "config_flow": true,
   "documentation": "https://github.com/kbalint/ha_db_browser",
   "issue_tracker": "https://github.com/kbalint/ha_db_browser/issues",
