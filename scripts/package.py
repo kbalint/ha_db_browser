@@ -17,6 +17,8 @@ def files(folder):
 
 runtime = files(component)
 assert (component / "frontend" / "panel.js") in runtime
+assert (component / "brand" / "icon.png") in runtime
+assert (component / "brand" / "icon@2x.png") in runtime
 documentation = [ROOT / name for name in ("README.md", "README.hu.md", "README.de.md", "LICENSE")]
 archive = out / f"ha-db-browser-{version}.zip"
 with ZipFile(archive, "w", ZIP_DEFLATED) as zipfile:

@@ -1,5 +1,9 @@
 # HA DB browser
 
+<img src="custom_components/ha_adatterkep/brand/icon.png" alt="HA DB browser icon" width="96">
+
+The integration includes its own cyan database-and-magnifying-glass icon. Home Assistant 2026.3 or newer displays these local brand images after installation and a restart; older versions may show a placeholder.
+
 **English** · [Magyar](README.hu.md) · [Deutsch](README.de.md)
 
 A custom Home Assistant integration with a React admin panel for exploring the live recorder SQLite database. No separate Node.js server, database export or copy is required.

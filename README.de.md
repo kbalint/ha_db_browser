@@ -1,5 +1,9 @@
 # HA DB browser
 
+<img src="custom_components/ha_adatterkep/brand/icon.png" alt="HA DB browser Symbol" width="96">
+
+Die Integration enthält ein eigenes cyanfarbenes Datenbank-Lupen-Symbol. Home Assistant ab 2026.3 zeigt diese lokalen Markenbilder nach Installation und Neustart an; ältere Versionen können einen Platzhalter anzeigen.
+
 [English](README.md) · [Magyar](README.hu.md) · **Deutsch**
 
 Benutzerdefinierte Home-Assistant-Integration mit React-Adminpanel zum Durchsuchen der laufenden Recorder-SQLite-Datenbank. Kein separater Node.js-Server, Datenbankexport oder Kopieren erforderlich.

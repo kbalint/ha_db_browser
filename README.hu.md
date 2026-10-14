@@ -1,5 +1,9 @@
 # HA DB browser
 
+<img src="custom_components/ha_adatterkep/brand/icon.png" alt="HA DB browser ikon" width="96">
+
+Az integráció saját cián adatbázis–nagyító ikont tartalmaz. A helyi brand képeket a Home Assistant 2026.3 vagy újabb jeleníti meg telepítés és újraindítás után; régebbi verzión helyettesítő ikon látszhat.
+
 [English](README.md) · **Magyar** · [Deutsch](README.de.md)
 
 Home Assistant egyéni integráció React adminpanellel az éles recorder SQLite adatbázisának böngészéséhez. Nem kell külön Node.js szerver, adatbázis-export vagy másolat.
