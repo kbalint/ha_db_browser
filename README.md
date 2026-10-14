@@ -78,3 +78,7 @@ Tests cover WAL concurrency, new commit visibility, read-only enforcement, locks
 Optional browser tests: run `npx playwright install chromium`, then `npm run test:browser`. To use an existing browser instead, set `BROWSER_EXECUTABLE` to its executable path.
 
 Official references: [HACS](https://www.hacs.dev/docs/publish/integration/), [Recorder](https://www.home-assistant.io/integrations/recorder/), [SQLite WAL](https://sqlite.org/wal.html).
+
+## Automatic releases
+
+The default development branch is `master`. Every push runs translation, backend and browser tests, builds the frontend, increments the integration patch version and publishes a GitHub release with installation and source ZIPs. HACS discovers releases during its periodic update checks. Release commits use [skip ci] to avoid recursive builds.

@@ -78,3 +78,7 @@ A tesztek ellenőrzik a WAL-párhuzamosságot, friss commitok láthatóságát, 
 Opcionális böngészőteszt: `npx playwright install chromium`, majd `npm run test:browser`. Meglévő böngésző használatához a `BROWSER_EXECUTABLE` környezeti változóban add meg a futtatható fájlját.
 
 Hivatalos háttér: [HACS](https://www.hacs.dev/docs/publish/integration/), [Recorder](https://www.home-assistant.io/integrations/recorder/), [SQLite WAL](https://sqlite.org/wal.html).
+
+## Automatikus kiadások
+
+Az alapértelmezett fejlesztési ág a `master`. Minden push fordítási, backend- és böngészőteszteket futtat, felépíti a frontendet, növeli az integráció patch verzióját, és GitHub release-t készít a telepítő és forrás ZIP-pel. A HACS az időszakos ellenőrzés során jelzi az új kiadásokat. A verziócommitok [skip ci] jelölése megakadályozza az ismétlődő buildet.

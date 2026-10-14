@@ -1,0 +1,62 @@
+name: Publish HACS release
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: db-browser-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install dependencies and validate
+        run: |
+          npm ci
+          npm run test:i18n
+          python -m unittest discover -s tests -v
+          npm run build
+          npx playwright install --with-deps chromium
+          npm run test:browser
+      - name: Increment integration patch version
+        id: version
+        run: |
+          node scripts/bump-version.cjs >> "$GITHUB_OUTPUT"
+          python scripts/package.py
+      - name: Commit version and built frontend
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add custom_components/ha_adatterkep/manifest.json custom_components/ha_adatterkep/frontend/panel.js
+          git commit -m "Release v${{ steps.version.outputs.version }} [skip ci]"
+          git push origin HEAD:master
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Publish integration and source archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_COMMIT: ${{ steps.commit.outputs.sha }}
+        run: |
+          gh release create "v$RELEASE_VERSION" \
+            "releases/ha-db-browser-$RELEASE_VERSION.zip" \
+            "releases/ha-db-browser-$RELEASE_VERSION-source.zip" \
+            --target "$RELEASE_COMMIT" \
+            --title "HA DB browser v$RELEASE_VERSION" \
+            --generate-notes \
+            --latest

@@ -1,0 +1,10 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const file = path.join(__dirname, '..', 'custom_components', 'ha_adatterkep', 'manifest.json');
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+if (!/^\d+\.\d+\.\d+$/.test(manifest.version)) throw new Error('Expected a stable major.minor.patch version');
+const parts = manifest.version.split('.').map(Number);
+parts[2] += 1;
+manifest.version = parts.join('.');
+fs.writeFileSync(file, JSON.stringify(manifest, null, 2) + '\n');
+console.log(`version=${manifest.version}`);

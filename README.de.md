@@ -78,3 +78,7 @@ Tests prüfen WAL-Parallelität, Sichtbarkeit neuer Commits, Schreibschutz, Sper
 Optionale Browsertests: `npx playwright install chromium`, anschließend `npm run test:browser`. Für einen vorhandenen Browser dessen ausführbare Datei über die Umgebungsvariable `BROWSER_EXECUTABLE` angeben.
 
 Offizielle Grundlagen: [HACS](https://www.hacs.dev/docs/publish/integration/), [Recorder](https://www.home-assistant.io/integrations/recorder/), [SQLite WAL](https://sqlite.org/wal.html).
+
+## Automatische Releases
+
+Der Standard-Entwicklungsbranch ist `master`. Jeder Push führt Übersetzungs-, Backend- und Browsertests aus, baut das Frontend, erhöht die Patch-Version der Integration und veröffentlicht ein GitHub-Release mit Installations- und Quellcode-ZIP. HACS erkennt neue Releases bei regelmäßigen Aktualisierungsprüfungen. Release-Commits verwenden [skip ci], um rekursive Builds zu verhindern.
