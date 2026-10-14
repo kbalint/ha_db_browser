@@ -1,0 +1,8 @@
+{
+  "title": "HA Adattérkép",
+  "config": {
+    "step": {"user": {"title": "Recorder adatbázis feltérképezése", "description": "A jelenlegi recorder SQLite adatbázisát olvassa, módosítás nélkül. Az admin oldalsávban megjelenik az Adattérkép. Teljes elemzés csak kézi indításra fut. {error}"}},
+    "error": {"cannot_connect": "Az adatbázis nem olvasható. {error}"},
+    "abort": {"already_configured": "Az Adattérkép már be van állítva."}
+  }
+}

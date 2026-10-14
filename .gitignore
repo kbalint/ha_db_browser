@@ -1,0 +1,12 @@
+node_modules/
+dist/
+data/
+releases/
+__pycache__/
+*.pyc
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+ELEMZES.md
+docs/LOCAL_VIEWER.md

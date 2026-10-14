@@ -1,0 +1,1 @@
+{"name":"ha-db-explorer","private":true,"scripts":{"analyze":"node analyze.cjs","build":"node build.cjs","start":"node server.cjs"},"dependencies":{"react":"19.2.0","react-dom":"19.2.0","esbuild":"0.25.12"}}
